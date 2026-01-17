@@ -72,7 +72,41 @@ The system creates clusters of 1 Driver + $k$ Passengers (where $k \le 4$) to ma
 * **Database:** PostGIS (for spatial indexing)
 * **Optimization:** Scikit-learn (for clustering potential matches)
 
-## 🚀 Future Improvements
+## 4. Future Work: Dynamic Pricing Optimization (Machine Learning)
 
-* **Route Interpolation:** Currently, the system matches based on Origin/Destination points. Future work involves matching passengers *along* the driver's route using Polyline decoding.
-* **Machine Learning:** Implementing a regression model to predict the optimal markup percentage $x$ based on current traffic conditions and demand.
+### 4.1. Research Problem
+The current implementation utilizes a static markup parameter ($x\%$) to compensate drivers for detours. However, this static value creates market inefficiencies:
+* **If $x$ is too low:** Drivers reject matches due to insufficient compensation for traffic/fuel.
+* **If $x$ is too high:** Passengers reject the ride, preferring alternative transport.
+
+The research objective is to replace the static $x$ with a dynamic variable $x_{opt}$ predicted by a Machine Learning model that maximizes the **Global Match Conversion Rate**.
+
+### 4.2. Proposed Methodology: Logistic Regression for Elasticity
+We propose a supervised learning approach to model the **Probability of Acceptance** ($P_{accept}$) based on the offered price markup.
+
+#### A. Feature Engineering ($X$)
+The model inputs (feature vector) will describe the context of the specific ride request:
+1.  **Detour Magnitude:** $\Delta d = dist(Driver_{route}) - dist(Shared_{route})$
+2.  **Traffic Factor:** Real-time congestion index on the detour segments.
+3.  **Supply/Demand Ratio:** Number of available drivers vs. active requests in the $1km$ radius.
+4.  **Temporal context:** Time of day (Rush hour vs. off-peak).
+
+#### B. The Prediction Model
+We define the probability of a user accepting a ride with markup $x$ using a logistic function:
+
+$$P(match \mid x, \mathbf{f}) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 x + \mathbf{w}^T \mathbf{f})}}$$
+
+Where:
+* $x$: The proposed markup percentage.
+* $\mathbf{f}$: The feature vector (traffic, detour, etc.).
+* $\mathbf{w}$: Learned weights representing user sensitivity to different factors.
+
+
+
+#### C. Optimization Function
+Once the model is trained, for every new match candidate, we numerically solve for the specific $x$ that maximizes the **Expected Value** of the match:
+
+$$x_{opt} = \arg\max_{x} \left[ P(match \mid x, \mathbf{f}) \times \text{DriverUtility}(x) \right]$$
+
+### 4.3. Reinforcement Learning Extension
+For a more advanced implementation, this system could be modeled as a **Contextual Multi-Armed Bandit** problem, where the "arms" are different price points, and the "reward" is the successful formation of a carpool group. This allows the system to learn online and adapt to changing user behaviors over time without a static training dataset.
