@@ -110,3 +110,5 @@ $$x_{opt} = \arg\max_{x} \left[ P(match \mid x, \mathbf{f}) \times \text{DriverU
 
 ### 4.3. Reinforcement Learning Extension
 For a more advanced implementation, this system could be modeled as a **Contextual Multi-Armed Bandit** problem, where the "arms" are different price points, and the "reward" is the successful formation of a carpool group. This allows the system to learn online and adapt to changing user behaviors over time without a static training dataset.
+
+![image](./Screenshot%202026-01-25%20at%205.18.49 PM.png)

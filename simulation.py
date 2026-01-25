@@ -274,6 +274,7 @@ def export_visualization_data(drivers, passengers, neighborhoods, work_areas, ma
             'city_center': CITY_CENTER,
             'area_size_km': AREA_SIZE_KM,
             'search_radius_km': SEARCH_RADIUS_KM,
+            'cluster_radius_km': CLUSTER_RADIUS_KM,
             'max_capacity': MAX_CAPACITY,
             'price_base': PRICE_BASE,
             'markup_percent': MARKUP_PERCENT
@@ -1197,27 +1198,80 @@ def generate_interactive_html(data):
             // Draw grid
             drawGrid();
             
-            // Draw neighborhood circles
+            // Draw neighborhood circles (residential areas)
+            // Convert km to degrees: 1 degree ≈ 111.32 km
+            const clusterRadiusDeg = data.config.cluster_radius_km / 111.32;
+            
             for (const n of data.neighborhoods) {
                 const pos = worldToScreen(n.lon, n.lat);
-                const radius = data.config.search_radius_km * 1.5 * viewScale / 111.32 * 100;
+                // Calculate radius in screen pixels
+                const radiusPixels = clusterRadiusDeg * viewScale;
                 
+                // Draw filled circle for neighborhood
                 ctx.beginPath();
-                ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(52, 152, 219, 0.1)';
+                ctx.arc(pos.x, pos.y, radiusPixels, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.15)';
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(52, 152, 219, 0.3)';
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(52, 152, 219, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
                 ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw center marker
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#3498db';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw label
+                ctx.font = '11px Arial';
+                ctx.fillStyle = '#3498db';
+                ctx.textAlign = 'center';
+                ctx.fillText(n.name, pos.x, pos.y - 12);
             }
             
-            // Draw work areas
+            // Draw work areas (destination clusters)
             for (const w of data.work_areas) {
                 const pos = worldToScreen(w.lon, w.lat);
+                const radiusPixels = clusterRadiusDeg * viewScale;
+                
+                // Draw filled circle for work area
                 ctx.beginPath();
-                ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+                ctx.arc(pos.x, pos.y, radiusPixels, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(155, 89, 182, 0.15)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(155, 89, 182, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw center marker (star shape)
+                ctx.beginPath();
+                const starSize = 8;
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+                    const x = pos.x + starSize * Math.cos(angle);
+                    const y = pos.y + starSize * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
                 ctx.fillStyle = '#9b59b6';
                 ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Draw label
+                ctx.font = '11px Arial';
+                ctx.fillStyle = '#9b59b6';
+                ctx.textAlign = 'center';
+                ctx.fillText(w.name, pos.x, pos.y - 14);
             }
             
             // Draw driver routes
